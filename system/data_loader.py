@@ -3,6 +3,8 @@ import sys, os
 import cv2
 import torch
 import numpy as np
+import torch.utils.data.dataset
+from tqdm import tqdm
 
 
 def default_loader(bgrImg224):
@@ -57,15 +59,26 @@ class IDDataSet():
         return
 
     def __getitem__(self, idx):
-        return
+        file_path = self.file_paths[idx]
+        file_id = self.file_IDs[idx]
+        file_label = self.file_labels[idx]
+        return torch_loader(cv2.imread(file_path)), file_path, file_id, file_label
 
     def __len__(self):
-        return
+        return len(self.file_paths)
 
 
 if __name__ == '__main__':
     # img = default_loader(cv2.imread("../demo_ims/0000166/260.jpg"))
-    img = torch_loader(cv2.imread("../demo_ims/0000166/260.jpg"))
+    # img = torch_loader(cv2.imread("../demo_ims/0000166/260.jpg"))
 
-    # dataset = IDDataSet("../demo_ims/")
+    dataset = IDDataSet("../demo_ims/")
+
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=8, shuffle=True, num_workers=0)
+
+    for img, file_path, id, label in tqdm(data_loader):
+        bgrIm = img[0].detach().cpu().numpy().transpose(1, 2, 0).astype(np.uint8)
+        cv2.imshow("x", bgrIm)
+        cv2.waitKey(0)
+        pass
     pass
