@@ -4,6 +4,7 @@ import numpy as np
 from models.group_face import GroupFace
 from loss.arcface_loss import ArcFaceLoss
 from system.data_loader import IDDataSet, torch_loader
+from system.system_funcs import visualise
 
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -49,14 +50,17 @@ def eval(model, gallery_path, probe_root_path, epoch):
         for file in os.listdir(os.path.join(probe_root_path, dir)):
             evaled_cnt += 1
             file_path = os.path.join(probe_root_path, dir, file)
+            GT_id = dir
 
             group_inter, final, group_prob, group_label = model(torch_loader(cv2.imread(file_path)).unsqueeze(0))
             feat = final.detach().cpu().reshape(1, 256).numpy()
             scores = cosine_similarity(feat, gallery_feats)
             max_idx = np.argmax(scores)
             predicted_id = gallery_ids[max_idx]
-            if predicted_id == dir:
+            if predicted_id == GT_id:
                 right_cnt += 1.0
+
+            # visualise(file_path, gallery_files[max_idx], predicted_id, GT_id, scores[0][max_idx], timeElapse=500)
 
             sys.stdout.write(
                 "\r EpochEval[{}] >> {}/{} acc:{}/{}={:.4f} ".format(epoch, evaled_cnt, whole_cnt, right_cnt,
@@ -64,7 +68,7 @@ def eval(model, gallery_path, probe_root_path, epoch):
             sys.stdout.flush()
 
     print("\n")
-    return
+    return right_cnt / evaled_cnt
 
 
 def train(model, epoch):
@@ -97,10 +101,22 @@ if __name__ == '__main__':
     probe_root_path = "./demo_eval/probe/"
     train_root_path = "./demo_ims/"
 
+    pretrained_model = "choosed/Epoch_3_acc_0.93.pth"
+    save_checkpoints_every_epoch = False
+
+    checkpoints_save_path = "checkpoints"
+    if os.path.exists(checkpoints_save_path) is False:
+        os.makedirs(checkpoints_save_path)
+
     train_dataset = IDDataSet(train_root_path)
     train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=0)
 
     model = GroupFace(resnet=18)
+    if os.path.exists(pretrained_model) is True:
+        print("loading {}".format(pretrained_model))
+        sys.stdout.flush()
+        model.load_state_dict(torch.load(pretrained_model))
+
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
 
@@ -113,6 +129,11 @@ if __name__ == '__main__':
     print("     \n START Training")
     for epoch in range(epoch_whole):
         train(model, epoch)
-        eval(model, gallery_path, probe_root_path, epoch)
+        acc = eval(model, gallery_path, probe_root_path, epoch)
+        if save_checkpoints_every_epoch is True:
+            out_path = os.path.join(checkpoints_save_path, "Epoch_{}_acc_{:.2f}.pth".format(epoch, acc))
+            torch.save(model.module.state_dict(), out_path)
 
+    out_path = os.path.join(checkpoints_save_path, "Epoch_Final_acc_{:.2f}.pth".format(acc))
+    torch.save(model.module.state_dict(), out_path)
     pass
