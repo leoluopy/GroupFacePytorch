@@ -55,10 +55,10 @@ class ArcFaceLoss(nn.Module):
         x : feature vector : (b x  d) b= batch size d = dimension
         labels : (b,)
         '''
-        x = nn.functional.normalize(x, p=2, dim=1)  # normalize the features
-
         with torch.no_grad():
             self.weight.weight.div_(torch.norm(self.weight.weight, dim=1, keepdim=True))
+
+        x = nn.functional.normalize(x, p=2, dim=1)  # normalize the features
 
         b = x.size(0)
         n = self.num_classes
@@ -66,22 +66,54 @@ class ArcFaceLoss(nn.Module):
         cos_angle = self.weight(x)
         cos_angle = torch.clamp(cos_angle, min=-1, max=1)
         for i in range(b):
-            cos_angle[i][labels[i]] = torch.cos(torch.acos(cos_angle[i][labels[i]]) + self.m)
+            # cos_angle[i][labels[i]] = torch.cos(torch.acos(cos_angle[i][labels[i]]) + self.m)
+            cos_angle[i][labels[i]] = cos_angle[i][labels[i]] - self.m
+            # cos_angle[i][labels[i]] = torch.acos(cos_angle[i][labels[i]])
         weighted_cos_angle = self.s * cos_angle
         log_probs = self.CrossEntropy(weighted_cos_angle, labels)
         return log_probs
 
 
-if __name__ == '__main__':
+def case2():
+    criteria = ArcFaceLoss()
+
+    label = torch.tensor(
+        [0]).cuda()
+    x = torch.rand((1, 3, 224, 224)).cuda()
+
+    from models.group_face import GroupFace
+    model = GroupFace(resnet=18)
+    if torch.cuda.is_available():
+        model = torch.nn.DataParallel(model).cuda()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer_center = torch.optim.Adam(criteria.weight.parameters(), lr=1e-4)
+
+    group_inter, final, group_prob, group_label = model(x)
+    loss = criteria(final, label)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    optimizer_center.step()
+
+    print("END")
+
+
+def case1():
     criteria = ArcFaceLoss()
     # x = torch.rand(32, 2048).cuda()
     # label = torch.tensor(
     #     [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, ]).cuda()
 
-    x = torch.rand(1, 256).cuda()
+    x = torch.rand(1, 256, requires_grad=True).cuda()
     label = torch.tensor(
         [0]).cuda()
 
     loss = criteria(x, label)
+
+
+if __name__ == '__main__':
+    # case1()
+    case2()
 
     pass

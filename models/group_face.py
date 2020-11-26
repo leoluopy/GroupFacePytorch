@@ -16,7 +16,7 @@ class FC(nn.Module):
 
     def forward(self, x):
         x = self.fc(x)
-        x = self.bn(x)
+        # x = self.bn(x)
         return self.act(x)
 
 
@@ -30,7 +30,8 @@ class GDN(nn.Module):
     def forward(self, x):
         intermediate = self.fc1(x)
         out = self.fc2(intermediate)
-        return intermediate, self.softmax(out)
+        # return intermediate, self.softmax(out)
+        return intermediate, torch.softmax(out, dim=1)
 
 
 class GroupFace(nn.Module):

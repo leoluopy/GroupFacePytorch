@@ -14,5 +14,10 @@ thanks for contributing
 # TODO List
 - [x] dataloader , sample ims,
 - [x] implement loss  
-- [ ] main process of training a demo set
+- [x] main process of training a demo set
+
+```
+python train.py to launch training after 5 epochs u will found the demo set top1 acc increase obivously
+```
+
 

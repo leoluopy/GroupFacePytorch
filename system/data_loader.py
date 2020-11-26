@@ -23,7 +23,7 @@ def torch_loader(bgrImg224):
     else:
         img = torch.from_numpy(bgrImg224).float()
     img = img.transpose(2, 0).transpose(1, 2) / 255.
-    img.unsqueeze(0)
+    # img = img.unsqueeze(0)  eval 时候需要，train 时候不需要
     return img
 
 
