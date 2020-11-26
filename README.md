@@ -1,5 +1,5 @@
 # GroupFacePytorch
-none official  pytorch implementation of CVPR2020 GroupFace
+Pytorch implementation of CVPR2020 GroupFace , Any issue or star will be appreciated.
 
 > This repository give you a easy way to quick look through the all training process of Group Face
 
