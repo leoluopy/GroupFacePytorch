@@ -18,10 +18,10 @@ thanks for contributing
 - [x] main process of training a demo set
 - [ ] image clustering
 - [ ] learning DGN
-
+--------------------------------------
 - [ ] train at MSCeleb[cleaned] 
 - [ ] eval at MegaFace LFW YTF CFP-TP AgeDB IJB-B IJB-C 
-
+--------------------------------------
 - [ ] hard or soft GroupFace probability study  
 - [ ] group ablation study
 - [ ] feature aggregation or concatenate study
