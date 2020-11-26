@@ -12,7 +12,7 @@ thanks for contributing
 
 
 # TODO List
-- [ ] dataloader , sample ims,
+- [x] dataloader , sample ims,
 - [x] implement loss  
 - [ ] main process of training a demo set
 

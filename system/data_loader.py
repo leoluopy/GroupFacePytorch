@@ -22,7 +22,7 @@ def torch_loader(bgrImg224):
         img = torch.from_numpy(bgrImg224).cuda().float()
     else:
         img = torch.from_numpy(bgrImg224).float()
-    img = img.transpose(2, 0).transpose(1, 2)
+    img = img.transpose(2, 0).transpose(1, 2) / 255.
     img.unsqueeze(0)
     return img
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=8, shuffle=True, num_workers=0)
 
     for img, file_path, id, label in tqdm(data_loader):
-        bgrIm = img[0].detach().cpu().numpy().transpose(1, 2, 0).astype(np.uint8)
+        bgrIm = (img[0] * 255.0).detach().cpu().numpy().transpose(1, 2, 0).astype(np.uint8)
         cv2.imshow("x", bgrIm)
         cv2.waitKey(0)
         pass

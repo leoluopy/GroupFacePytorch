@@ -10,7 +10,6 @@ import torch.utils.model_zoo as model_zoo
 import torch.nn.utils.weight_norm as weight_norm
 import torch.nn.functional as F
 
-
 # __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
 #            'resnet152']
 
@@ -144,10 +143,10 @@ class SEBlock(nn.Module):
         super(SEBlock, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
-                nn.Linear(channel, channel // reduction),
-                nn.PReLU(),
-                nn.Linear(channel // reduction, channel),
-                nn.Sigmoid()
+            nn.Linear(channel, channel // reduction),
+            nn.PReLU(),
+            nn.Linear(channel // reduction, channel),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -163,17 +162,18 @@ class ResNetFace(nn.Module):
         self.use_se = use_se
         super(ResNetFace, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
+        # self.bn1 = nn.BatchNorm2d(64)
         self.prelu = nn.PReLU()
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.bn4 = nn.BatchNorm2d(512)
+        # self.bn4 = nn.BatchNorm2d(512)
         self.dropout = nn.Dropout()
-        self.fc5 = nn.Linear(112*112*2, 4096)
-        self.bn5 = nn.BatchNorm1d(4096)
+        # self.fc5 = nn.Linear(112*112*2, 4096)
+        self.fc5 = nn.Linear(224 * 224 * 2, 1024)
+        # self.bn5 = nn.BatchNorm1d(4096)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -203,7 +203,7 @@ class ResNetFace(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.bn1(x)
+        # x = self.bn1(x)
         x = self.prelu(x)
         x = self.maxpool(x)
 
@@ -211,12 +211,12 @@ class ResNetFace(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-        x = self.bn4(x)
+        # x = self.bn4(x)
         x = self.dropout(x)
         x = x.view(x.size(0), -1)
-        #print(x.shape)
+        # print(x.shape)
         x = self.fc5(x)
-        x = self.bn5(x)
+        # x = self.bn5(x)
 
         return x
 
@@ -342,16 +342,19 @@ def resnet_face18(use_se=True, **kwargs):
     model = ResNetFace(IRBlock, [2, 2, 2, 2], use_se=use_se, **kwargs)
     return model
 
+
 def resnet_face50(use_se=True, **kwargs):
     model = ResNetFace(IRBlock, [3, 4, 6, 3], use_se=use_se, **kwargs)
     return model
+
 
 def resnet_face101(use_se=True, **kwargs):
     model = ResNetFace(IRBlock, [3, 4, 23, 3], use_se=use_se, **kwargs)
     return model
 
-if __name__=="__main__":
-    x = torch.randn(4,3,112,112)
+
+if __name__ == "__main__":
+    x = torch.randn(4, 3, 112, 112)
     model = resnet_face18()
     out = model(x)
 
