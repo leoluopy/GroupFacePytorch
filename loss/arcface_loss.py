@@ -67,8 +67,10 @@ class ArcFaceLoss(nn.Module):
         cos_angle = torch.clamp(cos_angle, min=-1, max=1)
         for i in range(b):
             # cos_angle[i][labels[i]] = torch.cos(torch.acos(cos_angle[i][labels[i]]) + self.m)
-            cos_angle[i][labels[i]] = cos_angle[i][labels[i]] - self.m
-            # cos_angle[i][labels[i]] = torch.acos(cos_angle[i][labels[i]])
+            with torch.no_grad():
+                delta_cos = torch.cos(torch.acos(cos_angle[i][labels[i]]) + self.m) - cos_angle[i][labels[i]]
+            cos_angle[i][labels[i]] = cos_angle[i][labels[i]] + delta_cos
+            pass
         weighted_cos_angle = self.s * cos_angle
         log_probs = self.CrossEntropy(weighted_cos_angle, labels)
         return log_probs

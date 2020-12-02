@@ -101,7 +101,8 @@ if __name__ == '__main__':
     probe_root_path = "./demo_eval/probe/"
     train_root_path = "./demo_ims/"
 
-    pretrained_model = "choosed/Epoch_3_acc_0.93.pth"
+    # pretrained_model = "choosed/Epoch_3_acc_0.93.pth"
+    pretrained_model = ""
     save_checkpoints_every_epoch = False
 
     checkpoints_save_path = "checkpoints"

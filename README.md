@@ -16,7 +16,7 @@ thanks for contributing
 - [x] dataloader , sample ims,
 - [x] implement loss  
 - [x] main process of training a demo set
-- [ ] image clustering
+- [x] image clustering
 - [ ] learning DGN
 --------------------------------------
 - [ ] train at MSCeleb[cleaned] 
