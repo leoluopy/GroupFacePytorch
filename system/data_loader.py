@@ -1,3 +1,4 @@
+import random
 import sys, os
 
 import cv2
@@ -5,6 +6,7 @@ import torch
 import numpy as np
 import torch.utils.data.dataset
 from tqdm import tqdm
+from system.argumentation import ArgumentationSchedule
 
 
 def default_loader(bgrImg224):
@@ -62,7 +64,10 @@ class IDDataSet():
         file_path = self.file_paths[idx]
         file_id = self.file_IDs[idx]
         file_label = self.file_labels[idx]
-        return torch_loader(cv2.imread(file_path)), file_path, file_id, file_label
+
+        bgrIm = cv2.imread(file_path)
+        # bgrIm_argu = ArgumentationSchedule(bgrIm, random.randint(0, 9))
+        return torch_loader(bgrIm), file_path, file_id, file_label
 
     def __len__(self):
         return len(self.file_paths)

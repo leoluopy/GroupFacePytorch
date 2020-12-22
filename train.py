@@ -5,6 +5,7 @@ from models.group_face import GroupFace
 from loss.arcface_loss import ArcFaceLoss
 from system.data_loader import IDDataSet, torch_loader
 from system.system_funcs import visualise
+from system.cos_lr import adjust_learning_rate
 
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -21,7 +22,9 @@ def load_gallery(model, gallery_path):
             gallery_ids.append(dir)
 
             group_inter, final, group_prob, group_label = model(torch_loader(cv2.imread(file_path)).unsqueeze(0))
-            feat = final.detach().cpu().reshape(1, 256).numpy()
+            feat = final / torch.norm(final, p=2, keepdim=False)
+            feat = feat.detach().cpu().reshape(1, 256).numpy()
+
             if isinstance(gallery_feats, dict) is True:
                 gallery_feats = feat
             else:
@@ -53,7 +56,9 @@ def eval(model, gallery_path, probe_root_path, epoch):
             GT_id = dir
 
             group_inter, final, group_prob, group_label = model(torch_loader(cv2.imread(file_path)).unsqueeze(0))
-            feat = final.detach().cpu().reshape(1, 256).numpy()
+            feat = final / torch.norm(final, p=2, keepdim=False)
+            feat = feat.detach().cpu().reshape(1, 256).numpy()
+
             scores = cosine_similarity(feat, gallery_feats)
             max_idx = np.argmax(scores)
             predicted_id = gallery_ids[max_idx]
@@ -72,8 +77,11 @@ def eval(model, gallery_path, probe_root_path, epoch):
 
 
 def train(model, epoch):
+    adjust_learning_rate(optimizer, epoch, learning_rate,
+                         float(learning_rate) / 100.0)
+    for param_group in optimizer.param_groups:
+        print("epoch: {} lr set to : {}".format(epoch, param_group['lr']))
     model.train()
-
     batch_len = len(train_data_loader)
     loss_sum = 0.0
     for i, (img, file_path, id, label) in enumerate(train_data_loader):
@@ -121,7 +129,7 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
 
-    criteria_arc = ArcFaceLoss()
+    criteria_arc = ArcFaceLoss(num_classes=10000)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     optimizer_center = torch.optim.Adam(criteria_arc.weight.parameters(), lr=learning_rate)
     # criteria_arc = torch.nn.CrossEntropyLoss()

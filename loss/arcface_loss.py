@@ -102,7 +102,7 @@ def case2():
 
 
 def case1():
-    criteria = ArcFaceLoss()
+    criteria = ArcFaceLoss(num_classes=10000)
     # x = torch.rand(32, 2048).cuda()
     # label = torch.tensor(
     #     [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, ]).cuda()
@@ -112,10 +112,11 @@ def case1():
         [0]).cuda()
 
     loss = criteria(x, label)
+    print(loss)
 
 
 if __name__ == '__main__':
-    # case1()
-    case2()
+    case1()
+    # case2()
 
     pass
