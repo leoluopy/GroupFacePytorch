@@ -49,6 +49,7 @@ def eval(model, gallery_path, probe_root_path, epoch):
 
     evaled_cnt = 0.0
     right_cnt = 0.0
+    sum_right_top1_score = 0.0
     for dir in os.listdir(probe_root_path):
         for file in os.listdir(os.path.join(probe_root_path, dir)):
             evaled_cnt += 1
@@ -64,12 +65,16 @@ def eval(model, gallery_path, probe_root_path, epoch):
             predicted_id = gallery_ids[max_idx]
             if predicted_id == GT_id:
                 right_cnt += 1.0
+                sum_right_top1_score += scores[0][max_idx]
 
             # visualise(file_path, gallery_files[max_idx], predicted_id, GT_id, scores[0][max_idx], timeElapse=500)
 
             sys.stdout.write(
-                "\r EpochEval[{}] >> {}/{} acc:{}/{}={:.4f} ".format(epoch, evaled_cnt, whole_cnt, right_cnt,
-                                                                     evaled_cnt, right_cnt / evaled_cnt))
+                "\r EpochEval[{}] >> {}/{} acc:{}/{}={:.4f} avgRscore: {:.2f}".format(epoch, evaled_cnt, whole_cnt,
+                                                                                      right_cnt, evaled_cnt,
+                                                                                      right_cnt / evaled_cnt,
+                                                                                      sum_right_top1_score / float(
+                                                                                          right_cnt+1e-10)))
             sys.stdout.flush()
 
     print("\n")
