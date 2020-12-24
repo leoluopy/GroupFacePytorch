@@ -17,7 +17,8 @@ thanks for contributing
 - [x] implement loss  
 - [x] main process of training a demo set
 - [x] image clustering
-- [ ] implement partial FC  
+- [x] implement partial FC
+- [ ] make backbone resNet50 and use Frelu as activation  
 - [ ] learning from scratch of MS1M 85K ids
 - [ ] learning DGN
 --------------------------------------

@@ -1,7 +1,9 @@
 import math
+import random
 
 import torch
 import torch.nn as nn
+import numpy as np
 
 
 class CrossEntropyLabelSmooth(nn.Module):
@@ -38,7 +40,7 @@ class CrossEntropyLabelSmooth(nn.Module):
 
 
 class ArcFaceLoss(nn.Module):
-    def __init__(self, m=0.1, s=1.0, d=256, num_classes=10, use_gpu=True, partial_fc_rate=2):
+    def __init__(self, m=0.1, s=1.0, d=256, num_classes=10, use_gpu=True, partial_fc_rate=0.1):
         super(ArcFaceLoss, self).__init__()
         self.m = m
         self.s = s
@@ -63,6 +65,24 @@ class ArcFaceLoss(nn.Module):
             idx += 1
         return -1
 
+    def dilate_centers2samplerate(self, positeve_centerIdxs):
+        expected_len_centers = int(self.num_classes * self.partial_fc_rate)
+        generated_len = int(expected_len_centers - positeve_centerIdxs.shape[0])
+
+        selected = positeve_centerIdxs.detach().cpu().numpy()
+        target_classes = np.arange(0, self.num_classes, 1)
+        target_classes = np.delete(target_classes, selected)
+
+        # rand_idxs = np.random.randint(0, target_classes.shape[0], [generated_len])
+        rand_idxs = random.sample(range(0, target_classes.shape[0]), generated_len)
+        negative_centers = target_classes[rand_idxs]
+
+        if torch.cuda.is_available():
+            positeve_centerIdxs = torch.cat((positeve_centerIdxs, torch.from_numpy(negative_centers).cuda()))
+        else:
+            positeve_centerIdxs = torch.cat((positeve_centerIdxs, torch.from_numpy(negative_centers)))
+        return positeve_centerIdxs
+
     def partial_sample(self, positive_labels):
         centers_Idxs = {}
         new_labels = {}
@@ -77,6 +97,7 @@ class ArcFaceLoss(nn.Module):
             else:
                 new_labels = torch.cat((new_labels, self.get_center_subscript(centers_Idxs, positive_labels[i])))
 
+        centers_Idxs = self.dilate_centers2samplerate(centers_Idxs)
         choosed_centers = self.weight.weight[centers_Idxs]
         return choosed_centers, new_labels
 

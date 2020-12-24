@@ -135,7 +135,9 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
 
-    criteria_arc = ArcFaceLoss(num_classes=10, m=0.5)
+    criteria_arc = ArcFaceLoss(num_classes=370000, m=0.5, partial_fc_rate=0.1)
+    # criteria_arc = ArcFaceLoss(num_classes=10, m=0.5, partial_fc_rate=1)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     optimizer_center = torch.optim.Adam(criteria_arc.weight.parameters(), lr=learning_rate)
     # criteria_arc = torch.nn.CrossEntropyLoss()
