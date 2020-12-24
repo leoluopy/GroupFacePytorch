@@ -21,6 +21,7 @@ class CrossEntropyLabelSmooth(nn.Module):
         self.use_gpu = use_gpu
         self.logsoftmax = nn.LogSoftmax(dim=1)
 
+    # partial fc 时，类中心个数会发生变化, label数值也要对应发生变化。
     def forward(self, inputs, targets, use_label_smoothing=True):
         """
         Args:
@@ -37,11 +38,12 @@ class CrossEntropyLabelSmooth(nn.Module):
 
 
 class ArcFaceLoss(nn.Module):
-    def __init__(self, m=0.1, s=1.0, d=256, num_classes=10, use_gpu=True, epsilon=0.1):
+    def __init__(self, m=0.1, s=1.0, d=256, num_classes=10, use_gpu=True, partial_fc_rate=2):
         super(ArcFaceLoss, self).__init__()
         self.m = m
         self.s = s
         self.num_classes = num_classes
+        self.partial_fc_rate = partial_fc_rate
 
         self.weight = torch.nn.Linear(d, num_classes, bias=False)
         if use_gpu:
@@ -50,20 +52,53 @@ class ArcFaceLoss(nn.Module):
         nn.init.uniform_(self.weight.weight, -bound, bound)
         self.CrossEntropy = CrossEntropyLabelSmooth(self.num_classes, use_gpu=use_gpu)
 
+    def get_center_subscript(self, center_Idxs, plabel):
+        idx = 0
+        for centerId in center_Idxs:
+            if centerId == plabel:
+                if torch.cuda.is_available():
+                    return torch.tensor([idx]).cuda()
+                else:
+                    return torch.tensor([idx])
+            idx += 1
+        return -1
+
+    def partial_sample(self, positive_labels):
+        centers_Idxs = {}
+        new_labels = {}
+        p_num = positive_labels.shape[0]
+        for i in range(p_num):
+            if isinstance(centers_Idxs, dict):
+                centers_Idxs = positive_labels[i].reshape(-1)
+            elif positive_labels[i] not in centers_Idxs:
+                centers_Idxs = torch.cat((centers_Idxs, positive_labels[i].reshape(-1)))
+            if isinstance(new_labels, dict):
+                new_labels = self.get_center_subscript(centers_Idxs, positive_labels[i])
+            else:
+                new_labels = torch.cat((new_labels, self.get_center_subscript(centers_Idxs, positive_labels[i])))
+
+        choosed_centers = self.weight.weight[centers_Idxs]
+        return choosed_centers, new_labels
+
     def forward(self, x, labels):
         '''
         x : feature vector : (b x  d) b= batch size d = dimension
         labels : (b,)
         '''
+        raw_label = labels
+        choosed_centers, new_labels = self.partial_sample(labels)
+        labels = new_labels
         with torch.no_grad():
-            self.weight.weight.div_(torch.norm(self.weight.weight, dim=1, keepdim=True))
+            # self.weight.weight.div_(torch.norm(self.weight.weight, dim=1, keepdim=True))
+            choosed_centers.div_(torch.norm(choosed_centers, dim=1, keepdim=True))
 
         x = nn.functional.normalize(x, p=2, dim=1)  # normalize the features
 
         b = x.size(0)
         n = self.num_classes
 
-        cos_angle = self.weight(x)
+        # cos_angle = self.weight(x)
+        cos_angle = torch.matmul(x, choosed_centers.t())
         cos_angle = torch.clamp(cos_angle, min=-1, max=1)
         for i in range(b):
             # cos_angle[i][labels[i]] = torch.cos(torch.acos(cos_angle[i][labels[i]]) + self.m)

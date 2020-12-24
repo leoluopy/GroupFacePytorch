@@ -74,7 +74,7 @@ def eval(model, gallery_path, probe_root_path, epoch):
                                                                                       right_cnt, evaled_cnt,
                                                                                       right_cnt / evaled_cnt,
                                                                                       sum_right_top1_score / float(
-                                                                                          right_cnt+1e-10)))
+                                                                                          right_cnt + 1e-10)))
             sys.stdout.flush()
 
     print("\n")
@@ -113,6 +113,7 @@ if __name__ == '__main__':
     gallery_path = "./demo_eval/gallery/"
     probe_root_path = "./demo_eval/probe/"
     train_root_path = "./demo_ims/"
+    batch_size = 4
 
     # pretrained_model = "choosed/Epoch_3_acc_0.93.pth"
     pretrained_model = ""
@@ -123,7 +124,7 @@ if __name__ == '__main__':
         os.makedirs(checkpoints_save_path)
 
     train_dataset = IDDataSet(train_root_path)
-    train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=0)
+    train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
 
     model = GroupFace(resnet=18)
     if os.path.exists(pretrained_model) is True:
@@ -134,7 +135,7 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
 
-    criteria_arc = ArcFaceLoss(num_classes=10000)
+    criteria_arc = ArcFaceLoss(num_classes=10, m=0.5)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     optimizer_center = torch.optim.Adam(criteria_arc.weight.parameters(), lr=learning_rate)
     # criteria_arc = torch.nn.CrossEntropyLoss()
