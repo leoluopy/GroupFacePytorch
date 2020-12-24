@@ -1,3 +1,4 @@
+import pickle
 import random
 import sys, os
 
@@ -30,7 +31,7 @@ def torch_loader(bgrImg224):
 
 
 class IDDataSet():
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, cache_file=""):
         self.root_dir = root_dir
         self.file_paths = []
         self.file_IDs = []
@@ -39,24 +40,36 @@ class IDDataSet():
         self.IDs = []
         self.IDsLabels = {}
 
-        for dir in os.listdir(self.root_dir):
-            if os.path.isdir(os.path.join(self.root_dir, dir)) is False:
-                raise ("DIR Error")
-            self.IDs.append(dir)
+        if os.path.exists(cache_file) is False:
+            for dir in os.listdir(self.root_dir):
+                if os.path.isdir(os.path.join(self.root_dir, dir)) is False:
+                    raise ("DIR Error")
+                self.IDs.append(dir)
 
-            label_idx = 0
-            for ID in self.IDs:
-                self.IDsLabels[ID] = label_idx
-                label_idx += 1
+                label_idx = 0
+                for ID in self.IDs:
+                    self.IDsLabels[ID] = label_idx
+                    label_idx += 1
 
-        for dir in os.listdir(self.root_dir):
-            if os.path.isdir(os.path.join(self.root_dir, dir)) is False:
-                raise ("DIR Error")
-            for file in os.listdir(os.path.join(self.root_dir, dir)):
-                if os.path.splitext(file)[1] in [".jpg", ".bmp", ".png"]:
-                    self.file_paths.append(os.path.join(self.root_dir, dir, file))
-                    self.file_IDs.append(dir)
-                    self.file_labels.append(self.IDsLabels[dir])
+            for dir in os.listdir(self.root_dir):
+                if os.path.isdir(os.path.join(self.root_dir, dir)) is False:
+                    raise ("DIR Error")
+                for file in os.listdir(os.path.join(self.root_dir, dir)):
+                    if os.path.splitext(file)[1] in [".jpg", ".bmp", ".png"]:
+                        self.file_paths.append(os.path.join(self.root_dir, dir, file))
+                        self.file_IDs.append(dir)
+                        self.file_labels.append(self.IDsLabels[dir])
+            print("data set loaded from scratch len: {}".format(len(self.file_paths)))
+            with open(cache_file, "wb") as f:
+                pickle.dump([self.file_paths,
+                             self.file_IDs,
+                             self.file_labels,
+                             self.IDs,
+                             self.IDsLabels], f)
+        else:
+            with open(cache_file, "rb") as f:
+                self.file_paths, self.file_IDs, self.file_labels, self.IDs, self.IDsLabels = pickle.load(f)
+            print("data set loaded from cache len: {}".format(len(self.file_paths)))
 
         return
 

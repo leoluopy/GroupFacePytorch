@@ -108,27 +108,29 @@ def train(model, epoch):
 
 if __name__ == '__main__':
 
-    epoch_whole = 200
+    epoch_whole = 400
     learning_rate = 1e-4
     gallery_path = "./demo_eval/gallery/"
     probe_root_path = "./demo_eval/probe/"
     train_root_path = "./demo_ims/"
     batch_size = 4
 
-    # pretrained_model = "choosed/Epoch_3_acc_0.93.pth"
+    # pretrained_model = "choosed/Epoch_35_acc_1.00.pth"
+    # pretrained_centers = "choosed/Epoch_35_centers.pth"
     pretrained_model = ""
+    pretrained_centers = ""
     save_checkpoints_every_epoch = False
 
     checkpoints_save_path = "checkpoints"
     if os.path.exists(checkpoints_save_path) is False:
         os.makedirs(checkpoints_save_path)
 
-    train_dataset = IDDataSet(train_root_path)
+    train_dataset = IDDataSet(train_root_path, "demoset.pk")
     train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
 
-    model = GroupFace(resnet=18)
+    model = GroupFace(resnet=50)
     if os.path.exists(pretrained_model) is True:
-        print("loading {}".format(pretrained_model))
+        print("loading weights {}".format(pretrained_model))
         sys.stdout.flush()
         model.load_state_dict(torch.load(pretrained_model))
 
@@ -137,6 +139,10 @@ if __name__ == '__main__':
 
     criteria_arc = ArcFaceLoss(num_classes=370000, m=0.5, partial_fc_rate=0.1)
     # criteria_arc = ArcFaceLoss(num_classes=10, m=0.5, partial_fc_rate=1)
+    if os.path.exists(pretrained_centers) is True:
+        print("loading centers {}".format(pretrained_centers))
+        sys.stdout.flush()
+        criteria_arc.weight.load_state_dict(torch.load(pretrained_centers))
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     optimizer_center = torch.optim.Adam(criteria_arc.weight.parameters(), lr=learning_rate)
@@ -150,7 +156,11 @@ if __name__ == '__main__':
         if save_checkpoints_every_epoch is True:
             out_path = os.path.join(checkpoints_save_path, "Epoch_{}_acc_{:.2f}.pth".format(epoch, acc))
             torch.save(model.module.state_dict(), out_path)
+            out_path_centers = os.path.join(checkpoints_save_path, "Epoch_{}_centers.pth".format(epoch))
+            torch.save(criteria_arc.weight.state_dict(), out_path_centers)
 
     out_path = os.path.join(checkpoints_save_path, "Epoch_Final_acc_{:.2f}.pth".format(acc))
     torch.save(model.module.state_dict(), out_path)
+    out_path_centers = os.path.join(checkpoints_save_path, "Epoch_Final_centers.pth")
+    torch.save(criteria_arc.weight.state_dict(), out_path_centers)
     pass

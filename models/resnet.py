@@ -9,6 +9,7 @@ import math
 import torch.utils.model_zoo as model_zoo
 import torch.nn.utils.weight_norm as weight_norm
 import torch.nn.functional as F
+from models.frelu import FReLU
 
 # __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
 #            'resnet152']
@@ -66,12 +67,14 @@ class IRBlock(nn.Module):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, use_se=True):
         super(IRBlock, self).__init__()
-        self.bn0 = nn.BatchNorm2d(inplanes)
+        # self.bn0 = nn.BatchNorm2d(inplanes)
         self.conv1 = conv3x3(inplanes, inplanes)
-        self.bn1 = nn.BatchNorm2d(inplanes)
-        self.prelu = nn.PReLU()
+        # self.bn1 = nn.BatchNorm2d(inplanes)
+        # self.prelu = nn.PReLU()
+        self.frelu1 = FReLU(inplanes)
+        self.frelu2 = FReLU(planes)
         self.conv2 = conv3x3(inplanes, planes, stride)
-        self.bn2 = nn.BatchNorm2d(planes)
+        # self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
         self.use_se = use_se
@@ -80,13 +83,14 @@ class IRBlock(nn.Module):
 
     def forward(self, x):
         residual = x
-        out = self.bn0(x)
-        out = self.conv1(out)
-        out = self.bn1(out)
-        out = self.prelu(out)
+        # out = self.bn0(x)
+        out = self.conv1(x)
+        # out = self.bn1(out)
+        # out = self.prelu(out)
+        out = self.frelu1(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
+        # out = self.bn2(out)
         if self.use_se:
             out = self.se(out)
 
@@ -94,7 +98,8 @@ class IRBlock(nn.Module):
             residual = self.downsample(x)
 
         out += residual
-        out = self.prelu(out)
+        # out = self.prelu(out)
+        out = self.frelu2(out)
 
         return out
 
@@ -163,7 +168,8 @@ class ResNetFace(nn.Module):
         super(ResNetFace, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False)
         # self.bn1 = nn.BatchNorm2d(64)
-        self.prelu = nn.PReLU()
+        # self.prelu = nn.PReLU()
+        self.frelu = FReLU(64)
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -204,7 +210,8 @@ class ResNetFace(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         # x = self.bn1(x)
-        x = self.prelu(x)
+        # x = self.prelu(x)
+        x = self.frelu(x)
         x = self.maxpool(x)
 
         x = self.layer1(x)

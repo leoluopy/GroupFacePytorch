@@ -77,7 +77,7 @@ class GroupFace(nn.Module):
 
 if __name__ == "__main__":
     x = torch.randn(1, 3, 224, 224)
-    model = GroupFace(resnet=18)
+    model = GroupFace(resnet=50)
     model.eval()
     out = model(x)
     print("==output==")
