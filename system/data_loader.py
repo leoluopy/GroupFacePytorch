@@ -20,7 +20,12 @@ def default_loader(bgrImg224):
     return input
 
 
-def torch_loader(bgrImg224):
+def torch_loader(bgrImg224, dimension=224):
+    if bgrImg224.shape[0] != bgrImg224.shape[1]:
+        raise (" input picture not a square")
+    if bgrImg224.shape[0] != dimension:
+        bgrImg224 = cv2.resize(bgrImg224, (dimension, dimension))
+
     if torch.cuda.is_available():
         img = torch.from_numpy(bgrImg224).cuda().float()
     else:
@@ -67,6 +72,8 @@ class IDDataSet():
                              self.IDs,
                              self.IDsLabels], f)
         else:
+            print("start loading from cache")
+            sys.stdout.flush()
             with open(cache_file, "rb") as f:
                 self.file_paths, self.file_IDs, self.file_labels, self.IDs, self.IDsLabels = pickle.load(f)
             print("data set loaded from cache len: {}".format(len(self.file_paths)))
