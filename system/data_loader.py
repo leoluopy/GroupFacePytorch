@@ -41,7 +41,7 @@ class IDDataSet():
         self.IDsLabels = {}
 
         if os.path.exists(cache_file) is False:
-            for dir in os.listdir(self.root_dir):
+            for dir in tqdm(os.listdir(self.root_dir)):
                 if os.path.isdir(os.path.join(self.root_dir, dir)) is False:
                     raise ("DIR Error")
                 self.IDs.append(dir)
@@ -51,7 +51,7 @@ class IDDataSet():
                     self.IDsLabels[ID] = label_idx
                     label_idx += 1
 
-            for dir in os.listdir(self.root_dir):
+            for dir in tqdm(os.listdir(self.root_dir)):
                 if os.path.isdir(os.path.join(self.root_dir, dir)) is False:
                     raise ("DIR Error")
                 for file in os.listdir(os.path.join(self.root_dir, dir)):

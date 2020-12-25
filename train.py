@@ -110,9 +110,13 @@ if __name__ == '__main__':
 
     epoch_whole = 400
     learning_rate = 1e-4
-    gallery_path = "./demo_eval/gallery/"
-    probe_root_path = "./demo_eval/probe/"
-    train_root_path = "./demo_ims/"
+    # gallery_path = "./demo_eval/gallery/"
+    # probe_root_path = "./demo_eval/probe/"
+    # train_root_path = "./demo_ims/"
+    gallery_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/gallery/"
+    probe_root_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/probe/"
+    train_root_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/train/"
+
     batch_size = 4
 
     # pretrained_model = "choosed/Epoch_35_acc_1.00.pth"
@@ -125,7 +129,7 @@ if __name__ == '__main__':
     if os.path.exists(checkpoints_save_path) is False:
         os.makedirs(checkpoints_save_path)
 
-    train_dataset = IDDataSet(train_root_path, "demoset.pk")
+    train_dataset = IDDataSet(train_root_path, "dataset.pk")
     train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
 
     model = GroupFace(resnet=50)
@@ -137,7 +141,7 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
 
-    criteria_arc = ArcFaceLoss(num_classes=370000, m=0.5, partial_fc_rate=0.1)
+    criteria_arc = ArcFaceLoss(num_classes=len(train_dataset.IDs), m=0.5, partial_fc_rate=0.1)
     # criteria_arc = ArcFaceLoss(num_classes=10, m=0.5, partial_fc_rate=1)
     if os.path.exists(pretrained_centers) is True:
         print("loading centers {}".format(pretrained_centers))
