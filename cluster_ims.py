@@ -1,22 +1,27 @@
-import pickle
-import random
-import shutil
+from os import cpu_count
 
-import numpy as np
-import sys, os, cv2
-import torch
-from skimage.feature import local_binary_pattern
-from kmeans_pytorch import kmeans, kmeans_predict
-from tqdm import tqdm
+import cv2
+import os
+import pickle
+
 import jpeg4py
+import numpy as np
+import torch
+import torch.utils.data
+from kmeans_pytorch import kmeans
+from skimage.feature import local_binary_pattern
+from tqdm import tqdm
 
 root_path = "./cluster_im/"
 
 
+class BatchLBPLoader(torch.utils.data.Dataset):
+    def __init__(self, pathes):
+        super(BatchLBPLoader, self).__init__()
+        self.pathes = pathes
 
-def GetAllFilesFeat(file_paths):
-    file_feats = {}
-    for file in tqdm(file_paths):
+    def __getitem__(self, idx):
+        file = self.pathes[idx]
         try:
             image = jpeg4py.JPEG(file).decode()
         except Exception as ex:
@@ -24,7 +29,23 @@ def GetAllFilesFeat(file_paths):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         lbp = local_binary_pattern(image, 8, 1)
         feat = np.histogram(lbp, 128)[0]
-        feat = torch.tensor(feat).unsqueeze(0).cuda()
+        if torch.cuda.is_available():
+            feat = torch.tensor(feat).cuda()
+        else:
+            feat = torch.tensor(feat)
+        return feat
+
+    def __len__(self):
+        return len(self.pathes)
+
+
+def GetAllFilesFeat(file_paths):
+    file_feats = {}
+    lbp_set = BatchLBPLoader(file_paths)
+    lbp_loader = torch.utils.data.DataLoader(lbp_set, batch_size=8, shuffle=False, num_workers=cpu_count() / 2)
+    # lbp_loader = torch.utils.data.DataLoader(lbp_set, batch_size=8, shuffle=False, num_workers=0)
+
+    for feat in tqdm(lbp_loader):
         if isinstance(file_feats, dict) is True:
             file_feats = feat
         else:
@@ -33,8 +54,8 @@ def GetAllFilesFeat(file_paths):
 
 
 if __name__ == '__main__':
-
-    dims, num_clusters = 128, 32
+    torch.multiprocessing.set_start_method('spawn')
+    dims, num_clusters = 128, 3
 
     file_paths = []
     for root, dirs, files in os.walk(root_path):
