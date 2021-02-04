@@ -42,7 +42,7 @@ class BatchLBPLoader(torch.utils.data.Dataset):
 def GetAllFilesFeat(file_paths):
     file_feats = {}
     lbp_set = BatchLBPLoader(file_paths)
-    lbp_loader = torch.utils.data.DataLoader(lbp_set, batch_size=8, shuffle=False, num_workers=cpu_count() / 2)
+    lbp_loader = torch.utils.data.DataLoader(lbp_set, batch_size=8, shuffle=False, num_workers=int(cpu_count() / 2))
     # lbp_loader = torch.utils.data.DataLoader(lbp_set, batch_size=8, shuffle=False, num_workers=0)
 
     for feat in tqdm(lbp_loader):
