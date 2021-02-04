@@ -65,6 +65,7 @@ class IDDataSet():
                         self.file_IDs.append(dir)
                         self.file_labels.append(self.IDsLabels[dir])
             print("data set loaded from scratch len: {}".format(len(self.file_paths)))
+            sys.stdout.flush()
             with open(cache_file, "wb") as f:
                 pickle.dump([self.file_paths,
                              self.file_IDs,
@@ -77,7 +78,7 @@ class IDDataSet():
             with open(cache_file, "rb") as f:
                 self.file_paths, self.file_IDs, self.file_labels, self.IDs, self.IDsLabels = pickle.load(f)
             print("data set loaded from cache len: {}".format(len(self.file_paths)))
-
+            sys.stdout.flush()
         return
 
     def __getitem__(self, idx):

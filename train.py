@@ -102,22 +102,25 @@ def train(model, epoch):
 
         loss_sum += float(loss)
         print("Epoch: {} [{}/{}] loss:{:.2f}".format(epoch, i, batch_len, float(loss)))
+        sys.stdout.flush()
 
     print("Epoch {} Trained Loss_Sum:{:.5f}".format(epoch, loss_sum / float(batch_len)))
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':
 
     epoch_whole = 400
     learning_rate = 1e-4
-    # gallery_path = "./demo_eval/gallery/"
-    # probe_root_path = "./demo_eval/probe/"
-    # train_root_path = "./demo_ims/"
-    gallery_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/gallery/"
-    probe_root_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/probe/"
-    train_root_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/train/"
+    gallery_path = "./demo_eval/gallery/"
+    probe_root_path = "./demo_eval/probe/"
+    train_root_path = "./demo_ims/"
+    # gallery_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/gallery/"
+    # probe_root_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/probe/"
+    # train_root_path = "/home/leo/samba107/lpy/dataset/MS1M/imgs_split/train/"
 
-    batch_size = 4
+    batch_size = 16
+    # batch_size = 96
 
     # pretrained_model = "choosed/Epoch_35_acc_1.00.pth"
     # pretrained_centers = "choosed/Epoch_35_centers.pth"
@@ -141,8 +144,8 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
 
-    criteria_arc = ArcFaceLoss(num_classes=len(train_dataset.IDs), m=0.5, partial_fc_rate=0.1)
-    # criteria_arc = ArcFaceLoss(num_classes=10, m=0.5, partial_fc_rate=1)
+    # criteria_arc = ArcFaceLoss(num_classes=len(train_dataset.IDs), m=0.5, partial_fc_rate=0.1)
+    criteria_arc = ArcFaceLoss(num_classes=10, m=0.5, partial_fc_rate=1)
     if os.path.exists(pretrained_centers) is True:
         print("loading centers {}".format(pretrained_centers))
         sys.stdout.flush()
