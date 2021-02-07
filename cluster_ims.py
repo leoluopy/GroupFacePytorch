@@ -33,10 +33,10 @@ def ThreadSchedule(pool, enter_func, param_list):
 
 def GetFeat(path, feat_all, mutex, idx):
     try:
-        try:
-            image = jpeg4py.JPEG(path).decode()
-        except Exception as ex:
-            image = cv2.imread(path)
+        # try:
+        #     image = jpeg4py.JPEG(path).decode()
+        # except Exception as ex:
+        image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         lbp = local_binary_pattern(image, 8, 1)
         feat = np.histogram(lbp, 128)[0]
@@ -87,14 +87,18 @@ def BatchLBPGenerater(pathes, batch_size, pool):
             ThreadSchedule(pool, GetFeat, [((path, feat_all, mutex, i), None)])
 
         cur_batch_len = len(pathes[start_idx:end_idx])
+        sleepCnt = 0
         while CheckFinished(mutex, feat_all, cur_batch_len) is False:
             time.sleep(0.01)
+            sleepCnt += 1
+            if sleepCnt > 100:
+                print("check finish > 1s : idx: {}".format(start_idx))
+                sleepCnt = 0
         for i in range(cur_batch_len):
             if i == 0:
                 feat_batch = feat_all[i]
             else:
                 feat_batch = torch.cat((feat_batch, feat_all[i]), 0)
-            feat_all[i].detach()
 
         start_idx = end_idx
         yield feat_batch
@@ -108,14 +112,16 @@ def GetAllFilesFeat(file_paths):
     cnt = 0
     wholeLen = int(len(file_paths) / batch_size)
     for feat in lbp_loader:
-        sys.stdout.write("\r >> {}/{}".format(cnt, wholeLen))
-        sys.stdout.flush()
         cnt += 1
         if isinstance(file_feats, dict) is True:
             file_feats = feat
         else:
             file_feats = torch.cat((file_feats, feat), 0)
-        feat.detach()
+        s = time.time()
+        torch.cuda.empty_cache()
+        sys.stdout.write(
+            "\r >> {}/{} clearCacheCost: {} ".format(cnt, wholeLen, time.time() - s))
+        sys.stdout.flush()
     return file_feats
 
 
@@ -124,7 +130,7 @@ if __name__ == '__main__':
     dims, num_clusters = 128, groups
 
     file_paths = []
-    for root, dirs, files in os.walk(root_path):
+    for root, dirs, files in os.walk(root_path, followlinks=True):
         for file in files:
             if os.path.splitext(file)[1] in ['.jpg', '.png']:
                 full_path = os.path.join(root, file)
